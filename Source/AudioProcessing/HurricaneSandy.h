@@ -6,13 +6,14 @@
 #include "LoopCrossfade.h"
 #include "Biquads.h"
 #include "Envelope.h"
-#include "Noise.h"
 
 class HurricaneSandy
 {
 public:
     HurricaneSandy() : grainImpact(0.0f), ampFluctuationImpact(0.0f)
     {
+        rng.setSeedRandomly();
+
         // Used for general amplitude fluctuation
         dips.setDomainMS(1000.0f);  // milliseconds
         dips.setDynamicExtremity(0.5f);
@@ -50,8 +51,29 @@ public:
         setInterpolatedParameters(0.0f);
     }
 
-    // TODO: add a reset() function that resets the envelope generator phase,
-    // seeds the noise generator, resets the granulator, etc.
+    void prepareToPlay(float sampleRate) noexcept
+    {
+        dips.prepareToPlay(sampleRate);
+        //granulator.prepareToPlay(sampleRate);  // TODO
+        lowFreqGranular.prepareToPlay(sampleRate);
+        lpButterworth_Grains.prepareToPlay(sampleRate);
+        hpButterworth_Grains.prepareToPlay(sampleRate);
+        lpButterworth_Signal.prepareToPlay(sampleRate);
+        noiseEnv.prepareToPlay(sampleRate);
+        sigEnv.prepareToPlay(sampleRate);
+    }
+
+    void reset() noexcept
+    {
+        dips.reset();
+        //granulator.reset();  // TODO: test this!
+        lowFreqGranular.reset();
+        lpButterworth_Grains.reset();
+        hpButterworth_Grains.reset();
+        lpButterworth_Signal.reset();
+        noiseEnv.reset();
+        sigEnv.reset();
+    }
 
     void processHurricaneSandy(juce::AudioBuffer<float>& buffer, int numChannels)
     {
@@ -81,7 +103,7 @@ public:
                 }
 
                 // Mix signal with periodic noise burst.
-                float noiseBurst = signalEnvValue * samples[i] + 0.05f * noiseBurstEnvValue * whiteNoise.tick();
+                float noiseBurst = signalEnvValue * samples[i] + 0.05f * noiseBurstEnvValue * (rng.nextFloat() * 2.0f - 1.0f);
                 samples[i] = (1.0f - noiseBurstImpact)*samples[i] + noiseBurstImpact*noiseBurst;
 
                 // Modulate the amplitude by the granular amplitude
@@ -134,7 +156,6 @@ private:
     Biquads hpButterworth_Grains;
     Biquads lpButterworth_Signal;
 
-    Noise whiteNoise;
     Envelope noiseEnv { 350 };
     Envelope sigEnv { 350 };
 
@@ -142,4 +163,6 @@ private:
     float lowFreqGrainNoiseLevel;
     float ampFluctuationImpact;
     float noiseBurstImpact;
+
+    juce::Random rng;
 };

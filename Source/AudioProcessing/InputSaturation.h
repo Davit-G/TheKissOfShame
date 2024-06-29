@@ -15,15 +15,20 @@ public:
         drive = 1.0f;
         oddGain = 1.0f;
         evenGain = 0.3f;
+    }
 
-        // TODO: put this into a reset() function
+    void prepareToPlay(float newSampleRate) noexcept
+    {
+        sampleRate = newSampleRate;
+        coef = 0.0f;
+        setFrequencyRolloff(4000.0f);
+    }
+
+    void reset() noexcept
+    {
         for (int i = 0; i < 10; ++i) {
             priorSample[i] = 0.0f;
         }
-
-        // TODO: put this into a prepareToPlay() function
-        coef = 0.0f;
-        setFrequencyRolloff(4000.0f);
     }
 
     void setThreshold(float threshold)
@@ -65,8 +70,7 @@ public:
     {
         if (f < 0.0f) { f = 0.0f; }
 
-        // TODO: don't hardcode sample rate here!
-        coef = f * (2.0f * PI) / SAMPLE_RATE;
+        coef = f * (2.0f * PI) / sampleRate;
         if (coef > 1.0f) {
             coef = 1.0f;
         } else if (coef < 0.0f) {
@@ -178,6 +182,8 @@ private:
     }
 
 private:
+    float sampleRate;
+
     float evenGain;
     float oddGain;
 

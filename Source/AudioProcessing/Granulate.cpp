@@ -18,8 +18,13 @@
 #include "Granulate.h"
 #include <cmath>
 
+// TODO: make independent of SAMPLE_RATE
+#define SAMPLE_RATE 44100
+
 Granulate::Granulate(unsigned int nVoices, const char* data, int size)
 {
+    rng.setSeedRandomly();
+
     setGrainParameters();  // use default values
     setRandomFactor();
     gStretch_ = 0;
@@ -129,7 +134,7 @@ void Granulate::calculateGrain(Granulate::Grain& grain)
 
     // Calculate duration and envelope parameters.
     float seconds = gDuration_ * 0.001f;
-    seconds += seconds * gRandomFactor_ * noise.tick();
+    seconds += seconds * gRandomFactor_ * (rng.nextFloat() * 2.0f - 1.0f);
     unsigned long count = (unsigned long)(seconds * SAMPLE_RATE);
     grain.attackCount = (unsigned int)(gRampPercent_ * 0.005f * count);
     grain.decayCount = grain.attackCount;
@@ -146,7 +151,7 @@ void Granulate::calculateGrain(Granulate::Grain& grain)
 
     // Calculate delay parameter.
     seconds = gDelay_ * 0.001f;
-    seconds += seconds * gRandomFactor_ * noise.tick();
+    seconds += seconds * gRandomFactor_ * (rng.nextFloat() * 2.0f - 1.0f);
     count = (unsigned long)(seconds * SAMPLE_RATE);
     grain.delayCount = count;
 
@@ -155,11 +160,11 @@ void Granulate::calculateGrain(Granulate::Grain& grain)
 
     // Calculate offset parameter.
     seconds = gOffset_ * 0.001f;
-    seconds += seconds * gRandomFactor_ * std::abs(noise.tick());
+    seconds += seconds * gRandomFactor_ * rng.nextFloat();
     int offset = int(seconds * SAMPLE_RATE);
 
     // Add some randomization to the pointer start position.
-    seconds = gDuration_ * 0.001f * gRandomFactor_ * noise.tick();
+    seconds = gDuration_ * 0.001f * gRandomFactor_ * (rng.nextFloat() * 2.0f - 1.0f);
     offset += int(seconds * SAMPLE_RATE);
     grain.pointer += offset;
     while (grain.pointer >= audioData->getNumSamples()) {
